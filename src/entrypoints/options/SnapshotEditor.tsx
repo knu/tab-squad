@@ -47,6 +47,10 @@ export function SnapshotEditor({
     onChange({ urls: snapshot.urls.filter((_, i) => i !== idx) });
   };
 
+  const addUrl = () => {
+    onChange({ urls: [...snapshot.urls, ''] });
+  };
+
   return (
     <div className="snapshot">
       <div className="snapshot-header">
@@ -114,6 +118,9 @@ export function SnapshotEditor({
           {snapshot.urls.length === 0 && (
             <li className="snapshot-empty">No URLs in this snapshot.</li>
           )}
+          <li className="snapshot-add-url">
+            <button onClick={addUrl}>+ Add URL</button>
+          </li>
         </ul>
       )}
     </div>

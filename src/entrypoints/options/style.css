@@ -152,6 +152,10 @@ section {
   padding: 4px 0;
 }
 
+.snapshot-add-url {
+  margin-top: 4px;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;
