@@ -1,0 +1,24 @@
+# zizmor configuration for TabSquad.
+#
+# Documented deliberate exceptions to zizmor's defaults.  Run zizmor
+# with `zizmor -c zizmor.yml .github/workflows` (or set
+# ZIZMOR_CONFIG=zizmor.yml).
+rules:
+  dangerous-triggers:
+    ignore:
+      # release.yml uses `workflow_run: workflows: [CI]` so that the
+      # GitHub Release only gets created after CI has passed for a
+      # tag push.  This is the github-actions guideline's recommended
+      # pattern, and it is gated on `head_branch` matching `v*` and
+      # checking out `head_sha`, so the trigger is safe in this repo.
+      - release.yml
+
+  cache-poisoning:
+    ignore:
+      # CI uses `actions/setup-node` with `cache: pnpm` to speed up
+      # install on every push.  Tag pushes also run through CI, but
+      # the release workflow lives in a separate workflow and does
+      # not consume CI's cache; the cache cannot poison anything we
+      # publish.  We accept this low-confidence finding rather than
+      # giving up the cache.
+      - ci.yml
