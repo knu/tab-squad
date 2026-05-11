@@ -1,15 +1,26 @@
 import { useState } from 'react';
+import { colorForGroupTitle } from '../../lib/colors';
 import { Snapshot } from '../../lib/types';
 
 interface Props {
   snapshot: Snapshot;
+  knownGroups: chrome.tabGroups.TabGroup[];
   onChange: (patch: Partial<Snapshot>) => void;
   onRemove: () => void;
   onRestore: () => void;
   onRecapture: () => void;
 }
 
-export function SnapshotEditor({ snapshot, onChange, onRemove, onRestore, onRecapture }: Props) {
+export function SnapshotEditor({
+  snapshot,
+  knownGroups,
+  onChange,
+  onRemove,
+  onRestore,
+  onRecapture,
+}: Props) {
+  const groupColor = colorForGroupTitle(snapshot.groupTitle, knownGroups);
+  const pillStyle = groupColor ? { background: groupColor } : undefined;
   const confirmRecapture = () => {
     const ok = window.confirm(
       `Overwrite saved URLs for "${snapshot.groupTitle}" with the current state of the group?`,
@@ -44,7 +55,12 @@ export function SnapshotEditor({ snapshot, onChange, onRemove, onRestore, onReca
           onClick={() => setExpanded((e) => !e)}
           title={expanded ? 'Collapse' : 'Expand'}
         >
-          {expanded ? '▾' : '▸'} <strong>{snapshot.groupTitle || '(untitled)'}</strong>
+          <span className="snapshot-caret" aria-hidden>
+            {expanded ? '▼' : '▶'}
+          </span>{' '}
+          <span className={`group-pill${groupColor ? ' has-color' : ''}`} style={pillStyle}>
+            {snapshot.groupTitle || '(untitled)'}
+          </span>
           <span className="snapshot-meta">
             {' '}
             {snapshot.urls.length} tab{snapshot.urls.length === 1 ? '' : 's'}

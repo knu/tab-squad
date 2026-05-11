@@ -123,6 +123,7 @@ section {
   color: var(--muted);
   font-weight: normal;
   font-size: 0.85rem;
+  margin-left: 12px;
 }
 
 .snapshot-urls {
@@ -173,6 +174,10 @@ input[type='text'] {
 .cell input[type='text'] {
   width: 100%;
   box-sizing: border-box;
+}
+
+.cell input.url-input,
+.cell input.template-input {
   font-family: ui-monospace, Menlo, monospace;
 }
 
@@ -207,10 +212,40 @@ button.danger {
   padding: 16px;
   margin-bottom: 12px;
   background: var(--row-bg);
+  position: relative;
 }
 
 .rule.disabled {
   opacity: 0.55;
+}
+
+.group-pill {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--row-bg);
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* When a tab group colour is applied to the group-pill or to a Tab Group /
+   Destination input, choose the text colour by the system colour scheme:
+   white in light mode, black in dark mode. */
+.group-pill.has-color,
+input.has-color {
+  color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .group-pill.has-color,
+  input.has-color {
+    color: #000000;
+  }
+}
+
+input[id^='group-title-'],
+input[id^='target-title-'] {
+  font-weight: 600;
 }
 
 .rule-grid {

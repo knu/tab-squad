@@ -343,6 +343,7 @@ export function OptionsApp() {
             <SnapshotEditor
               key={s.id}
               snapshot={s}
+              knownGroups={knownGroups}
               onChange={(patch) => updateSnapshot(s.id, patch)}
               onRemove={() => removeSnapshot(s.id)}
               onRestore={() => void onRestore(s.id)}

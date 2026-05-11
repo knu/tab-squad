@@ -1,3 +1,4 @@
+import { colorForGroupTitle } from '../../lib/colors';
 import { isUrlPatternValid } from '../../lib/match';
 import { ACTION_LABELS, Action, ActionKind, Rule } from '../../lib/types';
 
@@ -43,6 +44,13 @@ export function RuleEditor({
   const urlPatternValid = isUrlPatternValid(urlPattern);
 
   const groupTitles = dedupe(knownGroups.map((g) => g.title ?? '').filter(Boolean));
+  const groupTitleColor = colorForGroupTitle(rule.groupTitle, knownGroups);
+  const groupTitleStyle = groupTitleColor ? { background: groupTitleColor } : undefined;
+  const destinationColor =
+    rule.action.kind === 'targetGroup'
+      ? colorForGroupTitle(rule.action.groupTitle, knownGroups)
+      : undefined;
+  const destinationStyle = destinationColor ? { background: destinationColor } : undefined;
 
   return (
     <div className={`rule${rule.enabled ? '' : ' disabled'}`}>
@@ -81,9 +89,11 @@ export function RuleEditor({
           <input
             id={`group-title-${rule.id}`}
             type="text"
+            className={groupTitleColor ? 'has-color' : undefined}
             placeholder="Tab group title (e.g. Work, Slack)"
             value={rule.groupTitle}
             list={`group-titles-${rule.id}`}
+            style={groupTitleStyle}
             onChange={(e) => onChange({ groupTitle: e.target.value })}
           />
           <datalist id={`group-titles-${rule.id}`}>
@@ -97,6 +107,7 @@ export function RuleEditor({
           <input
             id={`url-pattern-${rule.id}`}
             type="text"
+            className="url-input"
             value={urlPattern}
             placeholder="^https?://(www\.)?example\.com/"
             aria-invalid={!urlPatternValid}
@@ -134,6 +145,7 @@ export function RuleEditor({
               <input
                 id={`rewrite-template-${rule.id}`}
                 type="text"
+                className="template-input"
                 value={rule.action.template}
                 onChange={(e) =>
                   onChange({ action: { kind: 'rewrite', template: e.target.value } })
@@ -153,9 +165,11 @@ export function RuleEditor({
               <input
                 id={`target-title-${rule.id}`}
                 type="text"
+                className={destinationColor ? 'has-color' : undefined}
                 placeholder="Group title (e.g. Outside)"
                 list={`target-titles-${rule.id}`}
                 value={rule.action.groupTitle}
+                style={destinationStyle}
                 onChange={(e) =>
                   onChange({ action: { kind: 'targetGroup', groupTitle: e.target.value } })
                 }
