@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="TabSquad">
+  <title>TabSquad</title>
+
+  <!-- Rounded blue square background -->
+  <rect x="0" y="0" width="128" height="128" rx="24" ry="24" fill="#2563eb" />
+
+  <!--
+    Four congruent tab-shaped tiles arranged 2x2.  Each tile is a 50x52
+    rounded rectangle with a small trapezoidal tab handle (16 wide, 6
+    tall) on top.  Tiles are drawn top row first, bottom row second so
+    that wherever bottom-row handles overlap the top-row tiles, the
+    bottom row wins.
+
+    Layout:
+      Tile width 50, height 52 (body) + 6 (handle), handle centred.
+      Top row body: y = 16..68 (handle at y = 10..16)
+      Bottom row body: y = 62..114 (handle at y = 56..62)
+      So the bottom-row handles cover y=56..62 of the top-row body,
+      creating the "凸 of the lower tile pokes into the upper tile"
+      look you asked for.
+
+      Left col x = 14..64
+      Right col x = 64..114
+      Handle on left tiles centred at x=39 (so 31..47),
+      Handle on right tiles centred at x=89 (so 81..97).
+  -->
+
+  <!--
+    Tile shape helper, 50 wide x 58 tall when including its handle.
+    Coordinates are designed to be symmetric across the tile's centre x=25.
+    The path walks clockwise around the tile, drawing a small trapezoidal
+    handle on top with 3-radius rounds at its corners and a 6-radius body
+    corner at the four body corners.
+  -->
+  <defs>
+    <!--
+      Tile 56 wide, body 50 tall starting at y=6, plus a 22x6 rounded tab
+      handle on top from y=0..6.  Symmetric around x=28.  Handle corners
+      have rx=3; body corners have rx=6.
+    -->
+    <path id="tile"
+      d="M 19 0
+         h 18
+         a 5 5 0 0 1 5 5
+         a 2 2 0 0 0 2 2
+         h 6
+         a 6 6 0 0 1 6 6
+         v 38
+         a 6 6 0 0 1 -6 6
+         h -44
+         a 6 6 0 0 1 -6 -6
+         v -38
+         a 6 6 0 0 1 6 -6
+         h 6
+         a 2 2 0 0 0 2 -2
+         a 5 5 0 0 1 5 -5 z"
+    />
+  </defs>
+
+  <!-- Top row first (fill + outline). -->
+  <g stroke="#2563eb" stroke-width="3" stroke-linejoin="round" fill="#ffffff">
+    <use href="#tile" transform="translate(8 11)" />
+    <use href="#tile" transform="translate(64 11)" />
+  </g>
+
+  <!-- Bottom row on top, so its tab handle covers the lower edge of the
+       upper tile. -->
+  <g stroke="#2563eb" stroke-width="3" stroke-linejoin="round" fill="#ffffff">
+    <use href="#tile" transform="translate(8 61)" />
+    <use href="#tile" transform="translate(64 61)" />
+  </g>
+
+  <!-- Symbols: 32x32, centred on each tile body. -->
+  <g fill="#2563eb">
+    <!-- TOP-LEFT: envelope -->
+    <g transform="translate(20 27)">
+      <rect x="0" y="4" width="32" height="24" rx="3" ry="3" />
+      <path d="M 2 7 L 16 19 L 30 7 L 30 9.5 L 16 21.5 L 2 9.5 Z" fill="#ffffff" />
+    </g>
+
+    <!-- TOP-RIGHT: single speech bubble -->
+    <g transform="translate(76 27)">
+      <path d="M 5 3
+               h 22
+               a 5 5 0 0 1 5 5
+               v 13
+               a 5 5 0 0 1 -5 5
+               h -11
+               l -8 6
+               v -6
+               h -3
+               a 5 5 0 0 1 -5 -5
+               v -13
+               a 5 5 0 0 1 5 -5 z" />
+    </g>
+
+    <!-- BOTTOM-LEFT: two overlapping bubbles -->
+    <g transform="translate(20 77)">
+      <path d="M 0 5
+               a 5 5 0 0 1 5 -5
+               h 15
+               a 5 5 0 0 1 5 5
+               v 10
+               a 5 5 0 0 1 -5 5
+               h -5
+               l -5 4
+               v -4
+               h -5
+               a 5 5 0 0 1 -5 -5 z" />
+      <path d="M 10 16
+               a 5 5 0 0 1 5 -5
+               h 12
+               a 5 5 0 0 1 5 5
+               v 8
+               a 5 5 0 0 1 -5 5
+               h -3
+               v 4
+               l -5 -4
+               h -4
+               a 5 5 0 0 1 -5 -5 z"
+            stroke="#ffffff" stroke-width="2" />
+    </g>
+
+    <!-- BOTTOM-RIGHT: cloud -->
+    <g transform="translate(76 77)">
+      <path d="M 3 26
+               h 26
+               a 7 7 0 0 0 1.5 -13.5
+               a 7 7 0 0 0 -12 -5
+               a 7.5 7.5 0 0 0 -14 4
+               a 6 6 0 0 0 -1.5 14.5
+               z" />
+    </g>
+  </g>
+</svg>

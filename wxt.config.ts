@@ -9,6 +9,10 @@ export default defineConfig({
     permissions: ['tabs', 'tabGroups', 'webNavigation', 'storage'],
     action: {
       default_title: 'TabSquad',
+      default_icon: {
+        16: 'icon/16.png',
+        32: 'icon/32.png',
+      },
     },
   },
 });
