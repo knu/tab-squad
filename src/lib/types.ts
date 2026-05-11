@@ -61,13 +61,15 @@ export interface Snapshot {
 
 export interface Settings {
   version: 1;
-  rules: Rule[];
+  syncedRules: Rule[];
+  localRules: Rule[];
   snapshots: Snapshot[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
-  rules: [],
+  syncedRules: [],
+  localRules: [],
   snapshots: [],
 };
 

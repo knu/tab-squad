@@ -1,20 +1,56 @@
-import { DEFAULT_SETTINGS, Settings } from './types';
+import { DEFAULT_SETTINGS, Rule, Settings, Snapshot } from './types';
 
-const STORAGE_KEY = 'settings';
+const SYNC_KEY = 'settings';
+const LOCAL_KEY = 'settings';
 
-function area(): chrome.storage.StorageArea {
+interface SyncPayload {
+  version: 1;
+  syncedRules: Rule[];
+  snapshots: Snapshot[];
+}
+
+interface LocalPayload {
+  localRules: Rule[];
+}
+
+function syncArea(): chrome.storage.StorageArea {
   return chrome.storage.sync ?? chrome.storage.local;
 }
 
+function localArea(): chrome.storage.StorageArea {
+  return chrome.storage.local;
+}
+
 export async function loadSettings(): Promise<Settings> {
-  const result = await area().get(STORAGE_KEY);
-  const value = result[STORAGE_KEY];
-  if (!value || typeof value !== 'object') return { ...DEFAULT_SETTINGS };
-  return migrate(value as Partial<Settings>);
+  const [syncRaw, localRaw] = await Promise.all([
+    syncArea()
+      .get(SYNC_KEY)
+      .then((r) => r[SYNC_KEY] as Partial<SyncPayload> | undefined),
+    localArea()
+      .get(LOCAL_KEY)
+      .then((r) => r[LOCAL_KEY] as Partial<LocalPayload> | undefined),
+  ]);
+  return {
+    version: 1,
+    syncedRules: Array.isArray(syncRaw?.syncedRules) ? syncRaw.syncedRules : [],
+    localRules: Array.isArray(localRaw?.localRules) ? localRaw.localRules : [],
+    snapshots: Array.isArray(syncRaw?.snapshots) ? syncRaw.snapshots : [],
+  };
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
-  await area().set({ [STORAGE_KEY]: settings });
+  const syncPayload: SyncPayload = {
+    version: 1,
+    syncedRules: settings.syncedRules,
+    snapshots: settings.snapshots,
+  };
+  const localPayload: LocalPayload = {
+    localRules: settings.localRules,
+  };
+  await Promise.all([
+    syncArea().set({ [SYNC_KEY]: syncPayload }),
+    localArea().set({ [LOCAL_KEY]: localPayload }),
+  ]);
 }
 
 export function onSettingsChanged(callback: (settings: Settings) => void): () => void {
@@ -23,18 +59,13 @@ export function onSettingsChanged(callback: (settings: Settings) => void): () =>
     areaName: chrome.storage.AreaName,
   ) => {
     if (areaName !== 'sync' && areaName !== 'local') return;
-    if (!(STORAGE_KEY in changes)) return;
-    const next = changes[STORAGE_KEY].newValue;
-    callback(next ? migrate(next as Partial<Settings>) : { ...DEFAULT_SETTINGS });
+    const key = areaName === 'local' ? LOCAL_KEY : SYNC_KEY;
+    if (!(key in changes)) return;
+    void loadSettings().then(callback);
   };
   chrome.storage.onChanged.addListener(listener);
   return () => chrome.storage.onChanged.removeListener(listener);
 }
 
-function migrate(raw: Partial<Settings>): Settings {
-  return {
-    version: 1,
-    rules: Array.isArray(raw.rules) ? raw.rules : [],
-    snapshots: Array.isArray(raw.snapshots) ? raw.snapshots : [],
-  };
-}
+// Re-export for callers that used to import DEFAULT_SETTINGS from this module.
+export { DEFAULT_SETTINGS };

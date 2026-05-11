@@ -7,6 +7,7 @@ interface Props {
   defaultTemplate: string;
   isFirst: boolean;
   isLast: boolean;
+  extraAction?: { label: string; onClick: () => void };
   onChange: (patch: Partial<Rule>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -28,6 +29,7 @@ export function RuleEditor({
   defaultTemplate,
   isFirst,
   isLast,
+  extraAction,
   onChange,
   onRemove,
   onMoveUp,
@@ -57,6 +59,11 @@ export function RuleEditor({
         </div>
         <div className="cell cell--inline cell--right">
           <div className="row-actions">
+            {extraAction && (
+              <button onClick={extraAction.onClick} title={extraAction.label}>
+                {extraAction.label}
+              </button>
+            )}
             <button onClick={onMoveUp} disabled={isFirst} title="Move up">
               ↑
             </button>

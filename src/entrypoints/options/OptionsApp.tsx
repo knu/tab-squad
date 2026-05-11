@@ -6,6 +6,8 @@ import { DEFAULT_SETTINGS, Rule, Settings, Snapshot } from '../../lib/types';
 import { RuleEditor } from './RuleEditor';
 import { SnapshotEditor } from './SnapshotEditor';
 
+type RuleScope = 'synced' | 'local';
+
 export function OptionsApp() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [knownGroups, setKnownGroups] = useState<chrome.tabGroups.TabGroup[]>([]);
@@ -23,7 +25,7 @@ export function OptionsApp() {
       .catch(() => {});
     void defaultRewriteTemplate().then(setDefaultTemplate);
 
-    // Track the current window so we can save / restore against the right one.
+    // Track the current window so we can capture / restore against the right one.
     void chrome.windows
       .getCurrent()
       .then(async (win) => {
@@ -43,30 +45,50 @@ export function OptionsApp() {
     setSavedAt(Date.now());
   };
 
-  const addRule = () => {
+  const rulesKey = (scope: RuleScope): 'syncedRules' | 'localRules' =>
+    scope === 'synced' ? 'syncedRules' : 'localRules';
+
+  const addRule = (scope: RuleScope) => {
     const rule = makeBlankRule(knownGroups);
-    void persist({ ...settings, rules: [...settings.rules, rule] });
+    const key = rulesKey(scope);
+    void persist({ ...settings, [key]: [...settings[key], rule] });
   };
 
-  const updateRule = (id: string, patch: Partial<Rule>) => {
+  const updateRule = (scope: RuleScope, id: string, patch: Partial<Rule>) => {
+    const key = rulesKey(scope);
     void persist({
       ...settings,
-      rules: settings.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+      [key]: settings[key].map((r) => (r.id === id ? { ...r, ...patch } : r)),
     });
   };
 
-  const removeRule = (id: string) => {
-    void persist({ ...settings, rules: settings.rules.filter((r) => r.id !== id) });
+  const removeRule = (scope: RuleScope, id: string) => {
+    const key = rulesKey(scope);
+    void persist({ ...settings, [key]: settings[key].filter((r) => r.id !== id) });
   };
 
-  const moveRule = (id: string, delta: -1 | 1) => {
-    const idx = settings.rules.findIndex((r) => r.id === id);
+  const moveRule = (scope: RuleScope, id: string, delta: -1 | 1) => {
+    const key = rulesKey(scope);
+    const list = settings[key];
+    const idx = list.findIndex((r) => r.id === id);
     if (idx < 0) return;
     const newIdx = idx + delta;
-    if (newIdx < 0 || newIdx >= settings.rules.length) return;
-    const next = settings.rules.slice();
+    if (newIdx < 0 || newIdx >= list.length) return;
+    const next = list.slice();
     [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
-    void persist({ ...settings, rules: next });
+    void persist({ ...settings, [key]: next });
+  };
+
+  const moveRuleToOtherScope = (scope: RuleScope, id: string) => {
+    const fromKey = rulesKey(scope);
+    const toKey = rulesKey(scope === 'synced' ? 'local' : 'synced');
+    const rule = settings[fromKey].find((r) => r.id === id);
+    if (!rule) return;
+    void persist({
+      ...settings,
+      [fromKey]: settings[fromKey].filter((r) => r.id !== id),
+      [toKey]: [...settings[toKey], rule],
+    });
   };
 
   const captureSnapshot = async (groupTitle: string, opts: { confirmOverwrite?: boolean } = {}) => {
@@ -145,13 +167,27 @@ export function OptionsApp() {
   const importJSON = async (file: File) => {
     try {
       const text = await file.text();
-      const parsed = JSON.parse(text) as Partial<Settings>;
-      if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.rules)) {
+      const parsed = JSON.parse(text) as Partial<Settings> & { rules?: Rule[] };
+      if (!parsed || typeof parsed !== 'object') {
         throw new Error('Invalid settings file');
       }
+      // Backward compatibility: an old export may have a single "rules" field.
+      const importedSynced = Array.isArray(parsed.syncedRules)
+        ? parsed.syncedRules
+        : Array.isArray(parsed.rules)
+          ? parsed.rules
+          : [];
+      const importedLocal = Array.isArray(parsed.localRules) ? parsed.localRules : [];
       const cleaned: Settings = {
         version: 1,
-        rules: parsed.rules.map((r) => ({ ...r, id: r.id || cryptoRandomId() })) as Rule[],
+        syncedRules: importedSynced.map((r) => ({
+          ...r,
+          id: r.id || cryptoRandomId(),
+        })) as Rule[],
+        localRules: importedLocal.map((r) => ({
+          ...r,
+          id: r.id || cryptoRandomId(),
+        })) as Rule[],
         snapshots: Array.isArray(parsed.snapshots)
           ? (parsed.snapshots.map((s) => ({
               ...s,
@@ -177,6 +213,38 @@ export function OptionsApp() {
     () => dedupe(currentWindowGroups.map((g) => g.title ?? '').filter(Boolean)),
     [currentWindowGroups],
   );
+
+  const renderRuleList = (scope: RuleScope) => {
+    const list = settings[rulesKey(scope)];
+    if (list.length === 0) {
+      return (
+        <div className="empty">
+          {scope === 'synced'
+            ? 'No synced rules yet.'
+            : 'No local-only rules. Local rules stay on this machine.'}
+        </div>
+      );
+    }
+    const otherScopeLabel = scope === 'synced' ? 'Move to local-only' : 'Move to synced';
+    return list.map((rule, idx) => (
+      <RuleEditor
+        key={rule.id}
+        rule={rule}
+        knownGroups={knownGroups}
+        defaultTemplate={defaultTemplate}
+        isFirst={idx === 0}
+        isLast={idx === list.length - 1}
+        extraAction={{
+          label: otherScopeLabel,
+          onClick: () => moveRuleToOtherScope(scope, rule.id),
+        }}
+        onChange={(patch) => updateRule(scope, rule.id, patch)}
+        onRemove={() => removeRule(scope, rule.id)}
+        onMoveUp={() => moveRule(scope, rule.id, -1)}
+        onMoveDown={() => moveRule(scope, rule.id, 1)}
+      />
+    ));
+  };
 
   return (
     <div className="app">
@@ -210,39 +278,37 @@ export function OptionsApp() {
       </div>
 
       <section>
-        <div className="section-header">
-          <h2>Routing rules</h2>
-          <button className="primary" onClick={addRule}>
-            + Add rule
-          </button>
+        <h2 className="section-title">Routing rules</h2>
+        <p className="section-help">
+          Local-only rules stay on this machine. Synced rules ride along with your browser profile
+          to your other devices. Local rules are checked first, so they can override a synced rule
+          for the same tab group on this machine.
+        </p>
+
+        <div className="subsection">
+          <div className="section-header">
+            <h3>Local-only</h3>
+            <button className="primary" onClick={() => addRule('local')}>
+              + Add rule
+            </button>
+          </div>
+          {renderRuleList('local')}
         </div>
 
-        {settings.rules.length === 0 ? (
-          <div className="empty">
-            No rules yet. Click <strong>+ Add rule</strong> to route links from a tab group
-            elsewhere.
+        <div className="subsection">
+          <div className="section-header">
+            <h3>Synced</h3>
+            <button className="primary" onClick={() => addRule('synced')}>
+              + Add rule
+            </button>
           </div>
-        ) : (
-          settings.rules.map((rule, idx) => (
-            <RuleEditor
-              key={rule.id}
-              rule={rule}
-              knownGroups={knownGroups}
-              defaultTemplate={defaultTemplate}
-              isFirst={idx === 0}
-              isLast={idx === settings.rules.length - 1}
-              onChange={(patch) => updateRule(rule.id, patch)}
-              onRemove={() => removeRule(rule.id)}
-              onMoveUp={() => moveRule(rule.id, -1)}
-              onMoveDown={() => moveRule(rule.id, 1)}
-            />
-          ))
-        )}
+          {renderRuleList('synced')}
+        </div>
       </section>
 
       <section>
         <div className="section-header">
-          <h2>Saved groups</h2>
+          <h2 className="section-title">Saved groups</h2>
           <div className="save-picker">
             <select value={pickedGroupTitle} onChange={(e) => setPickedGroupTitle(e.target.value)}>
               <option value="">(pick a tab group in this window)</option>

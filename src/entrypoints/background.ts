@@ -56,7 +56,11 @@ export default defineBackground(() => {
       return;
     }
 
-    const rule = findMatchingRule(cachedSettings.rules, group, details.url);
+    const rule = findMatchingRule(
+      [...cachedSettings.localRules, ...cachedSettings.syncedRules],
+      group,
+      details.url,
+    );
     if (!rule) return;
 
     rememberDispatch(details.tabId);
