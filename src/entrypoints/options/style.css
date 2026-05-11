@@ -50,6 +50,94 @@ h1 {
   font-style: italic;
 }
 
+section {
+  margin-top: 32px;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.section-header h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.section-help {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.save-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.snapshot {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--row-bg);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.snapshot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.snapshot-toggle {
+  flex: 1;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.snapshot-meta {
+  color: var(--muted);
+  font-weight: normal;
+  font-size: 0.85rem;
+}
+
+.snapshot-urls {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.snapshot-urls li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.snapshot-urls li input[type='text'] {
+  flex: 1;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.snapshot-empty {
+  color: var(--muted);
+  font-style: italic;
+  padding: 4px 0;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;

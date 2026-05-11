@@ -52,14 +52,23 @@ export interface Rule {
   action: Action;
 }
 
+export interface Snapshot {
+  id: string;
+  groupTitle: string;
+  urls: string[];
+  updatedAt: number;
+}
+
 export interface Settings {
   version: 1;
   rules: Rule[];
+  snapshots: Snapshot[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
   rules: [],
+  snapshots: [],
 };
 
 export const ACTION_LABELS: Record<ActionKind, string> = {

@@ -35,5 +35,6 @@ function migrate(raw: Partial<Settings>): Settings {
   return {
     version: 1,
     rules: Array.isArray(raw.rules) ? raw.rules : [],
+    snapshots: Array.isArray(raw.snapshots) ? raw.snapshots : [],
   };
 }

@@ -2,13 +2,13 @@ import { defineBackground } from 'wxt/utils/define-background';
 import { findMatchingRule } from '../lib/match';
 import { dispatch } from '../lib/router';
 import { loadSettings, onSettingsChanged } from '../lib/storage';
-import { Settings } from '../lib/types';
+import { DEFAULT_SETTINGS, Settings } from '../lib/types';
 
 const TAB_GROUP_ID_NONE = -1;
 const RECENTLY_DISPATCHED_TTL_MS = 5_000;
 
 export default defineBackground(() => {
-  let cachedSettings: Settings = { version: 1, rules: [] };
+  let cachedSettings: Settings = DEFAULT_SETTINGS;
   const recentlyDispatchedTabs = new Map<number, number>();
 
   const refreshSettings = async (): Promise<void> => {
@@ -77,6 +77,10 @@ export default defineBackground(() => {
 
   chrome.webNavigation.onCreatedNavigationTarget.addListener((details) => {
     void handle(details);
+  });
+
+  chrome.action.onClicked.addListener(() => {
+    void chrome.runtime.openOptionsPage();
   });
 
   chrome.runtime.onInstalled.addListener(() => {
