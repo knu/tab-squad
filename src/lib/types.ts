@@ -44,11 +44,22 @@ export type Action =
   | NextWindowTailAction
   | TargetGroupAction;
 
+export type RuleSourceScope = 'inGroup' | 'inWindowAsOrphan' | 'inWindow';
+
+export const DEFAULT_RULE_SOURCE_SCOPE: RuleSourceScope = 'inGroup';
+
+export const RULE_SOURCE_SCOPE_LABELS: Record<RuleSourceScope, string> = {
+  inGroup: 'In the group',
+  inWindowAsOrphan: 'As an orphan',
+  inWindow: 'In the group or as an orphan',
+};
+
 export interface Rule {
   id: string;
   enabled: boolean;
   groupTitle: string;
   urlPattern?: string;
+  scope?: RuleSourceScope;
   action: Action;
 }
 

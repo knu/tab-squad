@@ -9,6 +9,7 @@ interface DispatchContext {
   sourceTabId: number;
   sourceWindowId: number;
   sourceGroupId: number;
+  ruleGroupId: number;
 }
 
 export async function dispatch(rule: Rule, ctx: DispatchContext): Promise<void> {
@@ -49,10 +50,11 @@ async function runRewrite(template: string, ctx: DispatchContext): Promise<void>
 }
 
 async function runGroupTail(ctx: DispatchContext): Promise<void> {
-  if (ctx.sourceGroupId === TAB_GROUP_ID_NONE) return;
+  const groupId = ctx.sourceGroupId !== TAB_GROUP_ID_NONE ? ctx.sourceGroupId : ctx.ruleGroupId;
+  if (groupId === TAB_GROUP_ID_NONE) return;
   await chrome.tabs.move(ctx.tabId, { index: -1 });
   await chrome.tabs.group({
-    groupId: ctx.sourceGroupId,
+    groupId,
     tabIds: [ctx.tabId],
   });
 }

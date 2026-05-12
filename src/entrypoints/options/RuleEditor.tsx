@@ -1,6 +1,14 @@
 import { colorForGroupTitle } from '../../lib/colors';
 import { isUrlPatternValid } from '../../lib/match';
-import { ACTION_LABELS, Action, ActionKind, Rule } from '../../lib/types';
+import {
+  ACTION_LABELS,
+  Action,
+  ActionKind,
+  DEFAULT_RULE_SOURCE_SCOPE,
+  Rule,
+  RULE_SOURCE_SCOPE_LABELS,
+  RuleSourceScope,
+} from '../../lib/types';
 
 interface Props {
   rule: Rule;
@@ -23,6 +31,8 @@ const ACTION_ORDER: ActionKind[] = [
   'nextWindowTail',
   'targetGroup',
 ];
+
+const SCOPE_ORDER: RuleSourceScope[] = ['inGroup', 'inWindowAsOrphan', 'inWindow'];
 
 export function RuleEditor({
   rule,
@@ -101,6 +111,22 @@ export function RuleEditor({
               <option key={title} value={title} />
             ))}
           </datalist>
+          <label htmlFor={`scope-${rule.id}`}>Apply when source tab is</label>
+          <select
+            id={`scope-${rule.id}`}
+            value={rule.scope ?? DEFAULT_RULE_SOURCE_SCOPE}
+            onChange={(e) => onChange({ scope: e.target.value as RuleSourceScope })}
+          >
+            {SCOPE_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {RULE_SOURCE_SCOPE_LABELS[s]}
+              </option>
+            ))}
+          </select>
+          <p className="help">
+            The new tab is opened in the same window as the source tab. An orphan is a tab not in
+            any group.
+          </p>
         </div>
         <div className="cell">
           <label htmlFor={`url-pattern-${rule.id}`}>URL pattern (regex)</label>

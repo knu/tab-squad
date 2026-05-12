@@ -6,10 +6,28 @@ import { DEFAULT_SETTINGS, Settings } from '../lib/types';
 
 const TAB_GROUP_ID_NONE = -1;
 const RECENTLY_DISPATCHED_TTL_MS = 5_000;
+const ORPHAN_TTL_MS = 30_000;
+const STARTUP_QUIET_MS = 5_000;
+const QUIET_WINDOW_TTL_MS = 10_000;
+
+const EXCLUDED_URL_PREFIXES = [
+  'chrome://',
+  'edge://',
+  'about:',
+  'chrome-extension://',
+  'moz-extension://',
+];
+
+function isExcludedUrl(url: string): boolean {
+  return EXCLUDED_URL_PREFIXES.some((prefix) => url.startsWith(prefix));
+}
 
 export default defineBackground(() => {
   let cachedSettings: Settings = DEFAULT_SETTINGS;
   const recentlyDispatchedTabs = new Map<number, number>();
+  const orphanTabs = new Map<number, number>();
+  const quietWindows = new Map<number, number>();
+  const startupAt = Date.now();
 
   const refreshSettings = async (): Promise<void> => {
     cachedSettings = await loadSettings();
@@ -35,9 +53,27 @@ export default defineBackground(() => {
     return true;
   };
 
-  const handle = async (
+  const rememberOrphan = (tabId: number): void => {
+    orphanTabs.set(tabId, Date.now());
+    if (orphanTabs.size > 200) {
+      const cutoff = Date.now() - ORPHAN_TTL_MS;
+      for (const [id, ts] of orphanTabs) {
+        if (ts < cutoff) orphanTabs.delete(id);
+      }
+    }
+  };
+
+  const consumeOrphan = (tabId: number): boolean => {
+    const ts = orphanTabs.get(tabId);
+    if (ts == null) return false;
+    orphanTabs.delete(tabId);
+    return Date.now() - ts <= ORPHAN_TTL_MS;
+  };
+
+  const handleFromSourceTab = async (
     details: chrome.webNavigation.WebNavigationSourceCallbackDetails,
   ): Promise<void> => {
+    if (isExcludedUrl(details.url)) return;
     if (wasRecentlyDispatched(details.tabId)) return;
 
     let sourceTab: chrome.tabs.Tab;
@@ -47,30 +83,89 @@ export default defineBackground(() => {
       return;
     }
     const sourceGroupId = sourceTab.groupId ?? TAB_GROUP_ID_NONE;
-    if (sourceGroupId === TAB_GROUP_ID_NONE) return;
 
-    let group: chrome.tabGroups.TabGroup;
-    try {
-      group = await chrome.tabGroups.get(sourceGroupId);
-    } catch {
-      return;
+    let sourceGroup: chrome.tabGroups.TabGroup | null = null;
+    if (sourceGroupId !== TAB_GROUP_ID_NONE) {
+      try {
+        sourceGroup = await chrome.tabGroups.get(sourceGroupId);
+      } catch {
+        sourceGroup = null;
+      }
     }
 
-    const rule = findMatchingRule(
+    let sameWindowGroups: chrome.tabGroups.TabGroup[] = [];
+    try {
+      sameWindowGroups = await chrome.tabGroups.query({ windowId: sourceTab.windowId });
+    } catch {
+      sameWindowGroups = sourceGroup ? [sourceGroup] : [];
+    }
+
+    const matched = findMatchingRule(
       [...cachedSettings.localRules, ...cachedSettings.syncedRules],
-      group,
-      details.url,
+      {
+        url: details.url,
+        sourceGroup,
+        sameWindowGroups,
+      },
     );
-    if (!rule) return;
+    if (!matched) return;
 
     rememberDispatch(details.tabId);
 
-    await dispatch(rule, {
+    await dispatch(matched.rule, {
       tabId: details.tabId,
       url: details.url,
       sourceTabId: details.sourceTabId,
       sourceWindowId: sourceTab.windowId,
       sourceGroupId,
+      ruleGroupId: matched.ruleGroup?.id ?? TAB_GROUP_ID_NONE,
+    });
+  };
+
+  const handleOrphanCommit = async (
+    details: chrome.webNavigation.WebNavigationTransitionCallbackDetails,
+  ): Promise<void> => {
+    if (details.frameId !== 0) return;
+    if (isExcludedUrl(details.url)) return;
+    if (wasRecentlyDispatched(details.tabId)) return;
+    if (!consumeOrphan(details.tabId)) return;
+
+    let tab: chrome.tabs.Tab;
+    try {
+      tab = await chrome.tabs.get(details.tabId);
+    } catch {
+      return;
+    }
+    const groupId = tab.groupId ?? TAB_GROUP_ID_NONE;
+    if (groupId !== TAB_GROUP_ID_NONE) return;
+
+    let sameWindowGroups: chrome.tabGroups.TabGroup[] = [];
+    try {
+      sameWindowGroups = await chrome.tabGroups.query({ windowId: tab.windowId });
+    } catch {
+      sameWindowGroups = [];
+    }
+    if (sameWindowGroups.length === 0) return;
+
+    const matched = findMatchingRule(
+      [...cachedSettings.localRules, ...cachedSettings.syncedRules],
+      {
+        url: details.url,
+        sourceGroup: null,
+        sameWindowGroups,
+      },
+    );
+    if (!matched) return;
+
+    rememberDispatch(details.tabId);
+
+    await dispatch(matched.rule, {
+      tabId: details.tabId,
+      url: details.url,
+      sourceTabId: details.tabId,
+      sourceWindowId: tab.windowId,
+      sourceGroupId: TAB_GROUP_ID_NONE,
+      ruleGroupId: matched.ruleGroup?.id ?? TAB_GROUP_ID_NONE,
     });
   };
 
@@ -80,7 +175,39 @@ export default defineBackground(() => {
   });
 
   chrome.webNavigation.onCreatedNavigationTarget.addListener((details) => {
-    void handle(details);
+    void handleFromSourceTab(details);
+  });
+
+  const isQuietWindow = (windowId: number): boolean => {
+    const ts = quietWindows.get(windowId);
+    if (ts == null) return false;
+    if (Date.now() - ts > QUIET_WINDOW_TTL_MS) {
+      quietWindows.delete(windowId);
+      return false;
+    }
+    return true;
+  };
+
+  chrome.windows.onCreated.addListener((win) => {
+    if (win.id == null) return;
+    if (Date.now() - startupAt < STARTUP_QUIET_MS) {
+      quietWindows.set(win.id, Date.now());
+    }
+  });
+
+  chrome.tabs.onCreated.addListener((tab) => {
+    if (tab.id == null) return;
+    if (isQuietWindow(tab.windowId)) return;
+    if ((tab.groupId ?? TAB_GROUP_ID_NONE) !== TAB_GROUP_ID_NONE) return;
+    rememberOrphan(tab.id);
+  });
+
+  chrome.webNavigation.onCommitted.addListener((details) => {
+    void handleOrphanCommit(details);
+  });
+
+  chrome.tabs.onRemoved.addListener((tabId) => {
+    orphanTabs.delete(tabId);
   });
 
   chrome.action.onClicked.addListener(() => {
