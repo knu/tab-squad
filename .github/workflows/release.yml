@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: pnpm/action-setup@739bfe42ca9233c5e6aca07c1a25a9d34aca49b0  # v6.0.7
@@ -58,6 +59,14 @@ jobs:
       - name: Build Chrome zip
         run: pnpm zip
 
+      - name: Generate release notes
+        env:
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          pnpm exec git-cliff --tag "$TAG" --unreleased --strip header --output .release-notes.md
+          cat .release-notes.md
+
       - name: Create GitHub release with Chrome zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,5 +81,5 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --generate-notes \
+            --notes-file .release-notes.md \
             "$zip_path"
