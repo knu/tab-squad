@@ -8,7 +8,7 @@ version bumps for fixes; once `1.0.0` ships we will revisit and likely
 adopt strict [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [0.2.0] - 2026-05-13
 
 ### Added
 
