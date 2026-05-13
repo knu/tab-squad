@@ -41,7 +41,7 @@ pnpm version --no-git-tag-version "$kind" >/dev/null
 new_version=$(node -p "require('./package.json').version")
 tag="v$new_version"
 
-pnpm changelog >/dev/null
+pnpm exec git-cliff --tag "$tag" --output CHANGELOG.md
 git add package.json CHANGELOG.md
 
 cat <<EOF
