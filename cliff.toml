@@ -50,7 +50,8 @@ commit_parsers = [
   { message = "^Initial commit\\b", skip = true },
   { message = "^Merge\\b", skip = true },
   { message = "^Revert\\b", skip = true },
-  { message = "\\[ci skip\\]", skip = true },
+  # Explicit skip markers in the subject, e.g. "[chore]", "[ci skip]".
+  { message = "(?i)\\[(chore|ci skip|skip ci|skip changelog|no changelog)\\]", skip = true },
   { message = "(?i)\\b(CI|GitHub Actions?|workflows?|Dependabot|Renovate|Harden-?Runner|pre-?commit|lint(er|ing)?|format(ter|ting)?|prettier|eslint|rubocop|zizmor|actionlint)\\b", skip = true },
   { message = "(?i)\\b(README|docs?|documentation|comment|changelog|license|privacy policy|listing copy)\\b", skip = true },
   { message = "^(Refactor|Rework|Reformat|Clean ?up|Reorganize|Rename|Move|Format|Tidy|Tweak|Polish|Simplify|Inline|Extract|Restructure|Factor)\\b", skip = true },
