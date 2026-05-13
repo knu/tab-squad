@@ -10,10 +10,10 @@ TabSquad
 
 ## Summary (max 132 characters)
 
-Route links spawned from a tab group to another window, group, or
-external handler -- and snapshot whole groups for later.
+Route links spawned from or alongside a tab group to another
+window, group, or external handler -- and snapshot whole groups.
 
-(127 characters; tweak only if Chrome rejects.)
+(125 characters; tweak only if Chrome rejects.)
 
 ## Category
 
@@ -31,9 +31,9 @@ tabs spawn.
 
 Routing rules
 
-For each tab group title, choose what happens when one of its tabs
-opens a new tab via a link click, middle click, Cmd/Ctrl+click, or
-window.open:
+For each tab group title, choose what happens when a new tab is
+opened from a link click, middle click, Cmd/Ctrl+click, window.open,
+or even from an external app handing a URL to your browser:
 
 - Do nothing (the browser default).
 - Rewrite the URL via a template and update the tab.  Useful for
@@ -45,9 +45,22 @@ window.open:
   is none).
 - Move the tab into a named target tab group, creating it if needed.
 
+Each rule also picks when it applies, based on where the source
+tab sits:
+
+- In the group (the original behavior).
+- As an orphan -- a tab in the same window that does not belong
+  to any group, e.g. one freshly opened by an external app.
+- In the group or as an orphan.
+
+Tabs sitting inside an unrelated group are never disturbed.
+
 Rules are matched by tab group title plus an optional URL regex.
 The matching engine evaluates local-only rules first so a
-machine-specific rule can override a synced one.
+machine-specific rule can override a synced one.  Navigations to
+the browser's own settings pages (chrome://, edge://, about:) and
+extension pages (chrome-extension://, moz-extension://) are skipped
+so they stay in the window where you opened them.
 
 Saved groups
 
@@ -71,8 +84,8 @@ saved groups can be exported and imported as JSON.
 
 ## Single purpose
 
-TabSquad routes new tabs spawned from inside a tab group, and lets
-the user snapshot and restore the URLs of a tab group.
+TabSquad routes new tabs opened from inside a tab group or alongside
+one, and lets the user snapshot and restore the URLs of a tab group.
 
 ## Permission justifications
 
