@@ -8,6 +8,17 @@ version bumps for fixes; once `1.0.0` ships we will revisit and likely
 adopt strict [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.3.0] - 2026-05-14
+
+### Changed
+
+- Split URL rewriting out of the action so rules can do both
+- Hand external-scheme rewrites off through a dedicated tab page
+
+### Fixed
+
+- Stop leaving stray tabs after a rewrite to an external scheme
+
 ## [0.2.0] - 2026-05-13
 
 ### Added
