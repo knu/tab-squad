@@ -3,6 +3,11 @@ import { Action, Rule } from './types';
 
 const TAB_GROUP_ID_NONE = -1;
 
+// URL schemes the browser can render itself.  Anything outside this
+// list is treated as a hand-off to an OS scheme handler, after which
+// the source tab is closed.
+const BROWSER_HANDLED_SCHEME_RE = /^(https?|chrome-extension|moz-extension|chrome|edge|about):/i;
+
 interface DispatchContext {
   tabId: number;
   url: string;
@@ -12,14 +17,45 @@ interface DispatchContext {
   ruleGroupId: number;
 }
 
+export interface TransformResult {
+  // The URL the tab now points at (the rewritten one, or the original
+  // when the rule has no urlTransform / the transform was a no-op).
+  url: string;
+  // True when the rewritten URL has been handed off to an OS handler
+  // and the tab has been closed.  Callers should skip the rule's
+  // follow-up action in that case.
+  consumed: boolean;
+}
+
+// Apply the rule's optional urlTransform to the navigation.  If the
+// rewrite targets a non-browser scheme, the tab is closed and the
+// caller is expected to stop processing.  Otherwise the tab is
+// navigated to the new URL and the caller can keep going with the
+// rule's action.
+export async function applyUrlTransform(
+  rule: Rule,
+  ctx: DispatchContext,
+): Promise<TransformResult> {
+  if (!rule.urlTransform) return { url: ctx.url, consumed: false };
+  const next = applyTemplate(rule.urlTransform, ctx.url);
+  if (!next || next === ctx.url) return { url: ctx.url, consumed: false };
+  await chrome.tabs.update(ctx.tabId, { url: next });
+  if (!BROWSER_HANDLED_SCHEME_RE.test(next)) {
+    try {
+      await chrome.tabs.remove(ctx.tabId);
+    } catch {
+      // already gone — ignore
+    }
+    return { url: next, consumed: true };
+  }
+  return { url: next, consumed: false };
+}
+
 export async function dispatch(rule: Rule, ctx: DispatchContext): Promise<void> {
   const { action } = rule;
   try {
     switch (action.kind) {
       case 'default':
-        return;
-      case 'rewrite':
-        await runRewrite(action.template, ctx);
         return;
       case 'groupTail':
         await runGroupTail(ctx);
@@ -40,21 +76,6 @@ export async function dispatch(rule: Rule, ctx: DispatchContext): Promise<void> 
     }
   } catch (err) {
     console.warn('[TabSquad] action failed; leaving tab in default state', err);
-  }
-}
-
-async function runRewrite(template: string, ctx: DispatchContext): Promise<void> {
-  const next = applyTemplate(template, ctx.url);
-  if (!next || next === ctx.url) return;
-  await chrome.tabs.update(ctx.tabId, { url: next });
-  // For non-http(s) targets the browser hands the URL off to an OS scheme
-  // handler and the tab itself has nothing useful to render, so close it.
-  if (!/^https?:/i.test(next)) {
-    try {
-      await chrome.tabs.remove(ctx.tabId);
-    } catch {
-      // already gone — ignore
-    }
   }
 }
 

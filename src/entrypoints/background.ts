@@ -1,6 +1,6 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { findMatchingRule } from '../lib/match';
-import { dispatch } from '../lib/router';
+import { applyUrlTransform, dispatch } from '../lib/router';
 import { loadSettings, onSettingsChanged } from '../lib/storage';
 import { DEFAULT_SETTINGS, Settings } from '../lib/types';
 
@@ -112,14 +112,17 @@ export default defineBackground(() => {
 
     rememberDispatch(details.tabId);
 
-    await dispatch(matched.rule, {
+    const ctx = {
       tabId: details.tabId,
       url: details.url,
       sourceTabId: details.sourceTabId,
       sourceWindowId: sourceTab.windowId,
       sourceGroupId,
       ruleGroupId: matched.ruleGroup?.id ?? TAB_GROUP_ID_NONE,
-    });
+    };
+    const transformed = await applyUrlTransform(matched.rule, ctx);
+    if (transformed.consumed) return;
+    await dispatch(matched.rule, { ...ctx, url: transformed.url });
   };
 
   const handleOrphanCommit = async (
@@ -163,14 +166,17 @@ export default defineBackground(() => {
 
     rememberDispatch(details.tabId);
 
-    await dispatch(matched.rule, {
+    const ctx = {
       tabId: details.tabId,
       url: details.url,
       sourceTabId: details.tabId,
       sourceWindowId: tab.windowId,
       sourceGroupId: TAB_GROUP_ID_NONE,
       ruleGroupId: matched.ruleGroup?.id ?? TAB_GROUP_ID_NONE,
-    });
+    };
+    const transformed = await applyUrlTransform(matched.rule, ctx);
+    if (transformed.consumed) return;
+    await dispatch(matched.rule, { ...ctx, url: transformed.url });
   };
 
   void refreshSettings();

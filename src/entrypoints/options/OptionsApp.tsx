@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { defaultRewriteTemplate } from '../../lib/defaults';
 import { captureGroup, restoreSnapshot } from '../../lib/snapshot';
-import { loadSettings, onSettingsChanged, saveSettings } from '../../lib/storage';
+import { loadSettings, normalizeRule, onSettingsChanged, saveSettings } from '../../lib/storage';
 import { DEFAULT_SETTINGS, Rule, Settings, Snapshot } from '../../lib/types';
 import { RuleEditor } from './RuleEditor';
 import { SnapshotEditor } from './SnapshotEditor';
@@ -180,14 +180,14 @@ export function OptionsApp() {
       const importedLocal = Array.isArray(parsed.localRules) ? parsed.localRules : [];
       const cleaned: Settings = {
         version: 1,
-        syncedRules: importedSynced.map((r) => ({
-          ...r,
-          id: r.id || cryptoRandomId(),
-        })) as Rule[],
-        localRules: importedLocal.map((r) => ({
-          ...r,
-          id: r.id || cryptoRandomId(),
-        })) as Rule[],
+        syncedRules: importedSynced.map((r) => {
+          const rule = normalizeRule(r);
+          return { ...rule, id: rule.id || cryptoRandomId() };
+        }),
+        localRules: importedLocal.map((r) => {
+          const rule = normalizeRule(r);
+          return { ...rule, id: rule.id || cryptoRandomId() };
+        }),
         snapshots: Array.isArray(parsed.snapshots)
           ? (parsed.snapshots.map((s) => ({
               ...s,

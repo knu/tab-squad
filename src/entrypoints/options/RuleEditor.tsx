@@ -25,7 +25,6 @@ interface Props {
 
 const ACTION_ORDER: ActionKind[] = [
   'default',
-  'rewrite',
   'groupTail',
   'windowTail',
   'nextWindowTail',
@@ -47,7 +46,7 @@ export function RuleEditor({
   onMoveDown,
 }: Props) {
   const onActionKind = (kind: ActionKind) => {
-    onChange({ action: defaultActionFor(kind, rule.action, defaultTemplate) });
+    onChange({ action: defaultActionFor(kind, rule.action) });
   };
 
   const urlPattern = rule.urlPattern ?? '';
@@ -148,6 +147,22 @@ export function RuleEditor({
               </>
             )}
           </p>
+          <label htmlFor={`url-transform-${rule.id}`}>Rewrite URL (optional)</label>
+          <input
+            id={`url-transform-${rule.id}`}
+            type="text"
+            className="template-input"
+            value={rule.urlTransform ?? ''}
+            placeholder={defaultTemplate}
+            onChange={(e) => onChange({ urlTransform: e.target.value || undefined })}
+          />
+          <p className="help">
+            Placeholders: <code>{'{url}'}</code>, <code>{'{urlencoded}'}</code>,{' '}
+            <code>{'{host}'}</code>, <code>{'{path}'}</code>, <code>{'{search}'}</code>,{' '}
+            <code>{'{hash}'}</code>. Non-browser schemes (e.g. <code>hammerspoon://</code>) hand the
+            URL to an OS handler and close the tab; browser-handled schemes navigate the tab and
+            then the action below runs against the new URL.
+          </p>
         </div>
 
         <div className="cell">
@@ -165,26 +180,6 @@ export function RuleEditor({
           </select>
         </div>
         <div className="cell">
-          {rule.action.kind === 'rewrite' && (
-            <>
-              <label htmlFor={`rewrite-template-${rule.id}`}>URL template</label>
-              <input
-                id={`rewrite-template-${rule.id}`}
-                type="text"
-                className="template-input"
-                value={rule.action.template}
-                onChange={(e) =>
-                  onChange({ action: { kind: 'rewrite', template: e.target.value } })
-                }
-                placeholder="hammerspoon://open-in-edge?url={urlencoded}"
-              />
-              <p className="help">
-                Placeholders: <code>{'{url}'}</code>, <code>{'{urlencoded}'}</code>,{' '}
-                <code>{'{host}'}</code>, <code>{'{path}'}</code>, <code>{'{search}'}</code>,{' '}
-                <code>{'{hash}'}</code>.
-              </p>
-            </>
-          )}
           {rule.action.kind === 'targetGroup' && (
             <>
               <label htmlFor={`target-title-${rule.id}`}>Destination tab group</label>
@@ -217,15 +212,10 @@ export function RuleEditor({
   );
 }
 
-function defaultActionFor(kind: ActionKind, prev: Action, defaultTemplate: string): Action {
+function defaultActionFor(kind: ActionKind, prev: Action): Action {
   switch (kind) {
     case 'default':
       return { kind: 'default' };
-    case 'rewrite':
-      return {
-        kind: 'rewrite',
-        template: prev.kind === 'rewrite' ? prev.template : defaultTemplate,
-      };
     case 'groupTail':
       return { kind: 'groupTail' };
     case 'windowTail':

@@ -1,10 +1,4 @@
-export type ActionKind =
-  | 'default'
-  | 'rewrite'
-  | 'groupTail'
-  | 'windowTail'
-  | 'nextWindowTail'
-  | 'targetGroup';
+export type ActionKind = 'default' | 'groupTail' | 'windowTail' | 'nextWindowTail' | 'targetGroup';
 
 export interface BaseAction {
   kind: ActionKind;
@@ -12,11 +6,6 @@ export interface BaseAction {
 
 export interface DefaultAction extends BaseAction {
   kind: 'default';
-}
-
-export interface RewriteAction extends BaseAction {
-  kind: 'rewrite';
-  template: string;
 }
 
 export interface GroupTailAction extends BaseAction {
@@ -38,11 +27,18 @@ export interface TargetGroupAction extends BaseAction {
 
 export type Action =
   | DefaultAction
-  | RewriteAction
   | GroupTailAction
   | WindowTailAction
   | NextWindowTailAction
   | TargetGroupAction;
+
+// Legacy action shape kept for storage/import normalization.  Rules
+// loaded with this shape are rewritten into { urlTransform, action:
+// DefaultAction } before reaching the rest of the app.
+export interface LegacyRewriteAction {
+  kind: 'rewrite';
+  template: string;
+}
 
 export type RuleSourceScope = 'inGroup' | 'inWindowAsOrphan' | 'inWindow';
 
@@ -60,6 +56,11 @@ export interface Rule {
   groupTitle: string;
   urlPattern?: string;
   scope?: RuleSourceScope;
+  // Optional URL template applied before `action` runs.  When the
+  // rewritten URL is handed off to an OS scheme handler the tab is
+  // closed; when it stays in the browser, `action` then operates on
+  // the rewritten URL.
+  urlTransform?: string;
   action: Action;
 }
 
@@ -86,7 +87,6 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const ACTION_LABELS: Record<ActionKind, string> = {
   default: 'Default (do nothing)',
-  rewrite: 'Rewrite URL',
   groupTail: "Move to the same group's tail",
   windowTail: 'Move to the window tail',
   nextWindowTail: 'Move to the next window tail',

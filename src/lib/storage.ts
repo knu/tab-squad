@@ -1,16 +1,42 @@
-import { DEFAULT_SETTINGS, Rule, Settings, Snapshot } from './types';
+import { DEFAULT_SETTINGS, LegacyRewriteAction, Rule, Settings, Snapshot } from './types';
 
 const SYNC_KEY = 'settings';
 const LOCAL_KEY = 'settings';
 
 interface SyncPayload {
   version: 1;
-  syncedRules: Rule[];
+  syncedRules: unknown[];
   snapshots: Snapshot[];
 }
 
 interface LocalPayload {
-  localRules: Rule[];
+  localRules: unknown[];
+}
+
+// Older versions stored URL rewriting as { action: { kind: 'rewrite',
+// template } }.  Translate those into the current { urlTransform,
+// action: { kind: 'default' } } shape so the rest of the app sees
+// only one representation.  Settings saved after this run are
+// written back in the new shape.
+export function normalizeRule(input: unknown): Rule {
+  const raw = (input ?? {}) as Partial<Rule> & {
+    action?: unknown;
+  };
+  const action = raw.action as { kind?: string } | undefined;
+  if (action && action.kind === 'rewrite') {
+    const legacy = action as LegacyRewriteAction;
+    return {
+      ...(raw as Rule),
+      urlTransform: legacy.template,
+      action: { kind: 'default' },
+    };
+  }
+  return raw as Rule;
+}
+
+function normalizeRules(input: unknown): Rule[] {
+  if (!Array.isArray(input)) return [];
+  return input.map(normalizeRule);
 }
 
 function syncArea(): chrome.storage.StorageArea {
@@ -32,8 +58,8 @@ export async function loadSettings(): Promise<Settings> {
   ]);
   return {
     version: 1,
-    syncedRules: Array.isArray(syncRaw?.syncedRules) ? syncRaw.syncedRules : [],
-    localRules: Array.isArray(localRaw?.localRules) ? localRaw.localRules : [],
+    syncedRules: normalizeRules(syncRaw?.syncedRules),
+    localRules: normalizeRules(localRaw?.localRules),
     snapshots: Array.isArray(syncRaw?.snapshots) ? syncRaw.snapshots : [],
   };
 }
