@@ -54,5 +54,18 @@ export default [
       },
     },
   },
+  {
+    files: ['public/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: {
+        chrome: 'readonly',
+        window: 'readonly',
+        location: 'readonly',
+        URLSearchParams: 'readonly',
+      },
+    },
+  },
   prettier,
 ];

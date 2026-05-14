@@ -28,10 +28,11 @@ export interface TransformResult {
 }
 
 // Apply the rule's optional urlTransform to the navigation.  If the
-// rewrite targets a non-browser scheme, the tab is closed and the
-// caller is expected to stop processing.  Otherwise the tab is
-// navigated to the new URL and the caller can keep going with the
-// rule's action.
+// rewrite targets a non-browser scheme, route the tab through the
+// handoff page so window.open fires the system handler reliably and
+// the background script can close the handoff tab once the child tab
+// appears.  Otherwise the tab is navigated directly to the new URL
+// and the caller can keep going with the rule's action.
 export async function applyUrlTransform(
   rule: Rule,
   ctx: DispatchContext,
@@ -39,15 +40,12 @@ export async function applyUrlTransform(
   if (!rule.urlTransform) return { url: ctx.url, consumed: false };
   const next = applyTemplate(rule.urlTransform, ctx.url);
   if (!next || next === ctx.url) return { url: ctx.url, consumed: false };
-  await chrome.tabs.update(ctx.tabId, { url: next });
   if (!BROWSER_HANDLED_SCHEME_RE.test(next)) {
-    try {
-      await chrome.tabs.remove(ctx.tabId);
-    } catch {
-      // already gone — ignore
-    }
+    const handoff = chrome.runtime.getURL(`handoff.html?url=${encodeURIComponent(next)}`);
+    await chrome.tabs.update(ctx.tabId, { url: handoff });
     return { url: next, consumed: true };
   }
+  await chrome.tabs.update(ctx.tabId, { url: next });
   return { url: next, consumed: false };
 }
 

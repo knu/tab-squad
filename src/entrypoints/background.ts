@@ -121,7 +121,10 @@ export default defineBackground(() => {
       ruleGroupId: matched.ruleGroup?.id ?? TAB_GROUP_ID_NONE,
     };
     const transformed = await applyUrlTransform(matched.rule, ctx);
-    if (transformed.consumed) return;
+    if (transformed.consumed) {
+      handoffRestoreTargets.set(details.tabId, details.sourceTabId);
+      return;
+    }
     await dispatch(matched.rule, { ...ctx, url: transformed.url });
   };
 
@@ -175,7 +178,12 @@ export default defineBackground(() => {
       ruleGroupId: matched.ruleGroup?.id ?? TAB_GROUP_ID_NONE,
     };
     const transformed = await applyUrlTransform(matched.rule, ctx);
-    if (transformed.consumed) return;
+    if (transformed.consumed) {
+      if (tab.openerTabId != null) {
+        handoffRestoreTargets.set(details.tabId, tab.openerTabId);
+      }
+      return;
+    }
     await dispatch(matched.rule, { ...ctx, url: transformed.url });
   };
 
@@ -205,6 +213,44 @@ export default defineBackground(() => {
     }
   });
 
+  const handoffUrlPrefix = chrome.runtime.getURL('handoff.html');
+  // handoff tab id -> the tab we should refocus once the handoff tab is closed.
+  const handoffRestoreTargets = new Map<number, number>();
+
+  const closeHandoffTab = async (handoffTabId: number): Promise<void> => {
+    let tab: chrome.tabs.Tab;
+    try {
+      tab = await chrome.tabs.get(handoffTabId);
+    } catch {
+      return;
+    }
+    const tabUrl = tab.url ?? tab.pendingUrl ?? '';
+    if (!tabUrl.startsWith(handoffUrlPrefix)) return;
+    const restoreTabId = handoffRestoreTargets.get(handoffTabId);
+    handoffRestoreTargets.delete(handoffTabId);
+    // Activate the restore target *before* removing the handoff tab
+    // so Chrome's default "focus the neighbor on close" behavior does
+    // not steal focus onto the freshly-spawned external tab.
+    if (restoreTabId != null) {
+      try {
+        await chrome.tabs.update(restoreTabId, { active: true });
+      } catch {
+        // restore target may be closed — ignore
+      }
+    }
+    try {
+      await chrome.tabs.remove(handoffTabId);
+    } catch {
+      // already gone — ignore
+    }
+  };
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.kind === 'closeHandoffTab' && typeof msg.tabId === 'number') {
+      void closeHandoffTab(msg.tabId);
+    }
+  });
+
   chrome.tabs.onCreated.addListener((tab) => {
     if (tab.id == null) return;
     if (isQuietWindow(tab.windowId)) return;
@@ -218,6 +264,7 @@ export default defineBackground(() => {
 
   chrome.tabs.onRemoved.addListener((tabId) => {
     orphanTabs.delete(tabId);
+    handoffRestoreTargets.delete(tabId);
   });
 
   chrome.action.onClicked.addListener(() => {
