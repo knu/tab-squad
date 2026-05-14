@@ -47,6 +47,15 @@ async function runRewrite(template: string, ctx: DispatchContext): Promise<void>
   const next = applyTemplate(template, ctx.url);
   if (!next || next === ctx.url) return;
   await chrome.tabs.update(ctx.tabId, { url: next });
+  // For non-http(s) targets the browser hands the URL off to an OS scheme
+  // handler and the tab itself has nothing useful to render, so close it.
+  if (!/^https?:/i.test(next)) {
+    try {
+      await chrome.tabs.remove(ctx.tabId);
+    } catch {
+      // already gone — ignore
+    }
+  }
 }
 
 async function runGroupTail(ctx: DispatchContext): Promise<void> {
