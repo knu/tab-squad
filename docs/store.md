@@ -126,13 +126,13 @@ Certifications:
 
 ## Privacy policy URL
 
-https://github.com/knu/tab-squad/blob/main/docs/privacy.md
+https://github.com/knu/tabsquad/blob/main/docs/privacy.md
 
 ## Homepage / support URL
 
-https://github.com/knu/tab-squad
+https://github.com/knu/tabsquad
 
-Issues are tracked at https://github.com/knu/tab-squad/issues.
+Issues are tracked at https://github.com/knu/tabsquad/issues.
 
 ## Screenshots
 

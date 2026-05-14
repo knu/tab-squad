@@ -48,4 +48,4 @@ the respective browser vendor's privacy policy, not by TabSquad.
 ## Contact
 
 If you have a question about this policy, please open an issue at
-<https://github.com/knu/tab-squad/issues>.
+<https://github.com/knu/tabsquad/issues>.
