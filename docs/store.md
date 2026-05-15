@@ -95,6 +95,7 @@ one, and lets the user snapshot and restore the URLs of a tab group.
 | `tabGroups`     | Read a tab group's title to match rules and snapshots, and update group titles when restoring a saved group into a new group.        |
 | `webNavigation` | Detect new tabs created from a link click or `window.open` so TabSquad can apply a routing rule to the freshly-opened tab.           |
 | `storage`       | Persist the user's routing rules and saved-group snapshots in the browser's own extension storage.                                   |
+| `history`       | Delete TabSquad's own internal handoff page from the browser history after it has fired an external scheme handler, so it does not clutter the history view or the "recently closed tabs" list.  TabSquad does not read or modify any other entries. |
 
 No host permissions are requested.  TabSquad never reads page contents.
 

@@ -102,6 +102,7 @@ Clicking the extension's toolbar icon opens the options page.
 | `tabGroups`     | Read and update tab group titles.             |
 | `webNavigation` | Catch new tabs created from links.            |
 | `storage`       | Persist rules and saved groups.               |
+| `history`       | Remove TabSquad's own handoff page from history after it fires an external scheme handler. |
 
 No host permissions are requested. All URL matching and rewriting
 happens inside the extension.

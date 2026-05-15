@@ -6,7 +6,7 @@ export default defineConfig({
   manifest: {
     name: 'TabSquad',
     description: 'Keep tab groups organized: route links spawned from a group elsewhere.',
-    permissions: ['tabs', 'tabGroups', 'webNavigation', 'storage'],
+    permissions: ['tabs', 'tabGroups', 'webNavigation', 'storage', 'history'],
     action: {
       default_title: 'TabSquad',
       default_icon: {

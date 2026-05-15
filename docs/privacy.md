@@ -22,6 +22,13 @@ groups in order to decide what to do with them, but does not send,
 log, or persist those URLs anywhere outside the regular browser
 storage used for the routing decision.
 
+When a routing rule rewrites a link to an external (non-browser)
+scheme, TabSquad briefly loads its own internal handoff page in the
+tab so the OS scheme handler fires reliably.  It then deletes that
+handoff page's URL from the browser history so it does not appear in
+the history view or the "recently closed tabs" list.  TabSquad never
+reads, modifies, or transmits any other history entry.
+
 ## What TabSquad does not do
 
 - TabSquad does not have a server.  No data is uploaded to any service

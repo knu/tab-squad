@@ -243,6 +243,11 @@ export default defineBackground(() => {
     } catch {
       // already gone — ignore
     }
+    try {
+      await chrome.history.deleteUrl({ url: tabUrl });
+    } catch {
+      // history entry may not exist yet — ignore
+    }
   };
 
   chrome.runtime.onMessage.addListener((msg) => {
