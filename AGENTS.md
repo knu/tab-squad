@@ -22,3 +22,22 @@ services, interlocking lower-row-wins tabs, convex>concave handle
 radii) before tweaking the SVG.
 
 Regenerate PNGs with `pnpm icons` whenever `assets/icon.svg` changes.
+
+## Release
+
+Two-step flow on `main`:
+
+1. `pnpm bump <patch|minor|major>` -- bumps `package.json` and
+   commits `Bump version to vX.Y.Z`.  No tag, no CHANGELOG.
+2. `pnpm release` -- runs the full check + build, regenerates
+   `CHANGELOG.md` for the new tag, commits `Release vX.Y.Z`, and
+   creates the tag.  Aborts if the working tree is dirty, the tag
+   already exists, or `git-cliff` would produce an empty entry.
+
+Then push manually:
+
+```sh
+git push origin main
+git push origin vX.Y.Z   # triggers the Release workflow
+```
+
