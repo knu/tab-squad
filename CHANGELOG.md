@@ -8,6 +8,12 @@ version bumps for fixes; once `1.0.0` ships we will revisit and likely
 adopt strict [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.3.1] - 2026-05-15
+
+### Fixed
+
+- Stop the handoff page from lingering in browser history
+
 ## [0.3.0] - 2026-05-14
 
 ### Changed
@@ -28,6 +34,7 @@ adopt strict [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Route orphan tabs and add source-scope condition to rules
+- Use git-cliff for GitHub Release notes
 
 ## [0.1.0] - 2026-05-11
 
@@ -35,6 +42,7 @@ adopt strict [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add saved groups to capture and restore tab groups
 - Show tab group color on rule inputs and saved-group pills
+- Add toolbar icon
 
 ### Changed
 
