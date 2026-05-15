@@ -52,9 +52,12 @@ commit_parsers = [
   { message = "^Revert\\b", skip = true },
   { message = "^Release v?[0-9]", skip = true },
   # Explicit skip markers in the subject, e.g. "[chore]", "[doc]", "[ci skip]".
-  { message = "(?i)\\[(chore|docs?|ci skip|skip ci|skip changelog|no changelog)\\]", skip = true },
-  { message = "(?i)\\b(CI|GitHub Actions?|workflows?|Dependabot|Renovate|Harden-?Runner|pre-?commit|lint(er|ing)?|format(ter|ting)?|prettier|eslint|rubocop|zizmor|actionlint)\\b", skip = true },
-  { message = "(?i)\\b(README|docs?|documentation|comment|changelog|license|privacy policy|listing copy)\\b", skip = true },
+  # Anchor the keyword patterns to the subject line so the body of a
+  # user-visible commit can mention README, CI, etc. without making
+  # git-cliff drop the whole commit.
+  { message = "(?i)^[^\\n]*\\[(chore|docs?|ci skip|skip ci|skip changelog|no changelog)\\]", skip = true },
+  { message = "(?i)^[^\\n]*\\b(CI|GitHub Actions?|workflows?|Dependabot|Renovate|Harden-?Runner|pre-?commit|lint(er|ing)?|format(ter|ting)?|prettier|eslint|rubocop|zizmor|actionlint)\\b", skip = true },
+  { message = "(?i)^[^\\n]*\\b(README|docs?|documentation|comment|changelog|license|privacy policy|listing copy)\\b", skip = true },
   { message = "^(Refactor|Rework|Reformat|Clean ?up|Reorganize|Rename|Move|Format|Tidy|Tweak|Polish|Simplify|Inline|Extract|Restructure|Factor)\\b", skip = true },
   { message = "^(Test|Tests)\\b", skip = true },
 
